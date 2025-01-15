@@ -1,51 +1,28 @@
-import { useUser } from '../context/UserContext';
-import { useState, useEffect } from 'react';
+import './UserList.css';
 
-function UserList() {
-  const { users, socket } = useUser();
-  const [flashingUsers, setFlashingUsers] = useState(new Set());
-
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on('user-flash', (userId) => {
-      setFlashingUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.add(userId);
-        return newSet;
-      });
-
-      // Remove flash after 1 second
-      setTimeout(() => {
-        setFlashingUsers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(userId);
-          return newSet;
-        });
-      }, 1000);
-    });
-
-    return () => {
-      socket.off('user-flash');
-    };
-  }, [socket]);
+function UserList({ users, currentUser }) {
+  const cmykToRgb = (c, m, y, k) => {
+    let r = 255 * (1 - c / 100) * (1 - k / 100);
+    let g = 255 * (1 - m / 100) * (1 - k / 100);
+    let b = 255 * (1 - y / 100) * (1 - k / 100);
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  };
 
   return (
     <div className="user-list">
-      <h3>Connected Users</h3>
-      <ul>
-        {users.map((user) => (
-          <li key={user.id}>
-            <span style={{
-              color: flashingUsers.has(user.id) 
-                ? `cmyk(${user.color.c}% ${user.color.m}% ${user.color.y}% ${user.color.k}%)`
-                : 'black'
-            }}>
-              {user.name}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {users.map(user => (
+        <div 
+          key={user.id}
+          className={`user-item ${user.id === currentUser?.id ? 'current-user' : ''}`}
+          style={{
+            color: user.isFlashing 
+              ? cmykToRgb(user.color.c, user.color.m, user.color.y, user.color.k)
+              : '#000'
+          }}
+        >
+          {user.name}
+        </div>
+      ))}
     </div>
   );
 }
